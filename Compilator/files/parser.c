@@ -331,7 +331,7 @@ bool exprPrimary(){
       if(expr()){}
       else tkerr("Missing expression after ,");
      }
-    }else tkerr("Missing expression after (");
+    }
      if(consume(RPAR)){
       return true;
      }else tkerr("Missing )");
@@ -363,56 +363,54 @@ bool exprPrimary(){
 
     
 bool stm(){
-	printf("#stm\n");
-	Token* start= iTk;
-	if(stmCompound()){
-		return true;
-	}
-	if(consume(IF)){
-		if(consume(LPAR)){
-			if(expr()){
-				if(consume(RPAR)){
-					if(stm()){
-						if(consume(ELSE)){
-							if(stm()) {
-                                return true;
-                            } else {
-                                tkerr("Else statement missing");
-                            }
-						}
-						return true;
-					}else tkerr("If statement missing");
-				}else tkerr("Missing ) for if");
-			}else tkerr("Missing if expression");
-		}else tkerr("Missing ( after if");
-		iTk=start;
-	}
-	else if(consume(WHILE)){
-		if(consume(LPAR)){
-			if(expr()){
-				if(consume(RPAR)){
-					if(stm()){
-						return true;
-					}else tkerr("Missing while body");
-				}else tkerr("Missing ) for while");
-			}else tkerr("Missing while condition");
-		}else tkerr("Missing ( after while keyword");
-		iTk=start;
-	}
-	else if(consume(RETURN)){
-		if(expr()){}
-		if(consume(SEMICOLON)){
-			return true;
-		}else tkerr("Missing ; at return statement");
-		iTk=start;
-	}
-	else if(expr()) {
-        if(consume(SEMICOLON)){
+  printf("#stm\n");
+  Token* start= iTk;
+  if(stmCompound()){
+    return true;
+  }
+  if(consume(IF)){
+   if(consume(LPAR)){
+    if(expr()){
+     if(consume(RPAR)){
+      if(stm()){
+       if(consume(ELSE)){
+	if(stm()) {
+          return true;
+	 }else tkerr("Else statement missing");
+       }
+	  return true;
+      }else tkerr("If statement missing");
+     }else tkerr("Missing ) for if");
+    }else tkerr("Missing if expression");
+   }else tkerr("Missing ( after if");
+    iTk=start;
+  }
+   else if(consume(WHILE)){
+         if(consume(LPAR)){
+	  if(expr()){
+	   if(consume(RPAR)){
+	    if(stm()){
+	      return true;
+	    }else tkerr("Missing while body");
+	   }else tkerr("Missing ) for while");
+	  }else tkerr("Missing while condition");
+	 }else tkerr("Missing ( after while keyword");
+	  iTk=start;
+   }
+    else if(consume(RETURN)){
+	  if(expr()){}
+	   if(consume(SEMICOLON)){
+	     return true;
+	   }else tkerr("Missing ; at return statement");
+	  iTk=start;
+    }
+    else if(expr()) {
+          if(consume(SEMICOLON)){
             return true;
-        } 
-	}
-	iTk = start;
-	return false;
+	  }
+    }
+     iTk = start;
+     return false;
 }
 
 
