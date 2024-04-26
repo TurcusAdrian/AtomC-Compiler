@@ -72,7 +72,11 @@ const char* tokenName(int position){
   case LESSEQ: return "LESSEQ";
   case GREATER: return "GREATER";
   case GREATEREQ: return "GREATEREQ";
-  default: return "ERROR - TOKEN NOT FROM LIST";
+  case DOUBLE: return "DOUBLE";
+  case INT: return "INT";
+  case CHAR: return "CHAR";
+  case STRING: return "STRING";
+  default: return "ERROR";
   }
 }
 
@@ -109,7 +113,17 @@ Token *tokenize(const char *pch){
 		        case '+': addTk(ADD);pch++;break;
 		        case '-': addTk(SUB);pch++;break;
 		        case '*': addTk(MUL);pch++;break;
-		        case '/': addTk(DIV);pch++;break;
+		        case '/':
+			          if (pch[1] == '/') {
+				    while (*pch && *pch != '\n' && *pch != '\r') {
+				      pch++;
+				    }
+				    line++;
+				  } else {
+				    addTk(DIV);
+				    pch++;
+				  }
+				  break;
 		        case '.': addTk(DOT);pch++;break;
 		        case ';': addTk(SEMICOLON);pch++;break;
 		        case '!':
@@ -151,7 +165,7 @@ Token *tokenize(const char *pch){
 				else if(isdigit(*pch)){
 				  int with_dot = 0;
 				  int with_e = 0;
-				  for (start = pch++; isalnum(*pch) || *pch == '_' || *pch == '.' || *pch == 'e' || *pch=='E' || *pch == '-' || *pch == '+'; pch++){
+				   for (start = pch++; isalnum(*pch) || *pch == '_' || *pch == '.' || *pch == 'e' || *pch=='E' || *pch == '-' || *pch == '+'; pch++){
 				      if (*pch == '.'){
 						with_dot=1;
 				      }
@@ -190,13 +204,29 @@ Token *tokenize(const char *pch){
 					tk->text=text;
 				  }
 				}
-				else err("invalid char: %c (%d)",*pch,*pch);
+				else pch++;//err("invalid char: %c (%d)",*pch,*pch);
 		}
 	}
 }
 
-void showTokens(const Token *tokens){
-	for(const Token *tk=tokens;tk;tk=tk->next){
-	  printf("%d - %s\n",tk->line,tokenName(tk->code));
-	}
+void showTokens(const Token *tokens) {
+ 
+    for (const Token *tk = tokens; tk; tk = tk->next) {
+        const char *token = tokenName(tk->code);
+	
+        printf("%d - %s", tk->line, token);
+
+        if (strcmp(token, "INT") == 0) {
+            printf(":%d\n", tk->i);
+        } else if (strcmp(token, "DOUBLE") == 0) {
+            printf(":%g\n", tk->d);
+        } else if (strcmp(token, "CHAR") == 0) {
+            printf(":%c\n", tk->c);
+        } else if (strcmp(token, "STRING") == 0) {
+            printf(":%s\n", tk->text);
+        } else {
+            printf("\n");
+        }
+    }
 }
+
