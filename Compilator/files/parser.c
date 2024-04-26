@@ -76,7 +76,7 @@ bool varDef(){
      if(consume(SEMICOLON)){
        return true;
      } else tkerr("Missing ; from variable definition");
-    } else tkerr("Missing name from variable declaration");
+    } else tkerr("Missing name(id) from variable declaration");
   }
   iTk=start;
   return false;
@@ -329,7 +329,7 @@ bool exprPrimary(){
     if(expr()){
      while(consume(COMMA)){
       if(expr()){}
-      else tkerr("Missing expression after .");
+      else tkerr("Missing expression after ,");
      }
     }else tkerr("Missing expression after (");
      if(consume(RPAR)){
@@ -382,7 +382,7 @@ bool stm(){
 						}
 						return true;
 					}else tkerr("If statement missing");
-				}else tkerr("Missing )");
+				}else tkerr("Missing ) for if");
 			}else tkerr("Missing if expression");
 		}else tkerr("Missing ( after if");
 		iTk=start;
@@ -396,7 +396,7 @@ bool stm(){
 					}else tkerr("Missing while body");
 				}else tkerr("Missing ) for while");
 			}else tkerr("Missing while condition");
-		}else tkerr("Missing ) after while keyword");
+		}else tkerr("Missing ( after while keyword");
 		iTk=start;
 	}
 	else if(consume(RETURN)){
@@ -409,10 +409,8 @@ bool stm(){
 	else if(expr()) {
         if(consume(SEMICOLON)){
             return true;
-        } else {
-            tkerr("Missing ; after expression");
-        }
-    }
+        } 
+	}
 	iTk = start;
 	return false;
 }
@@ -467,7 +465,7 @@ bool fnDef(){
       }else tkerr("Missing body function");
      }else tkerr("Missing ) in function");
     }
-   }
+   }else tkerr("Missing name(id) for function");
   }
   iTk=start;
   return false;
