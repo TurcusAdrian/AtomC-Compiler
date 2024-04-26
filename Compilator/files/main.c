@@ -2,15 +2,16 @@
 #include <stdlib.h>
 #include "utils.h"
 #include "lexer.h"
-//#include "parser.h"
-//#include "parser.c"
+#include "parser.h"
+
 
 int main(){
-  char *inbuf=loadFile("tests/testlex.c");
+  char *inbuf=loadFile("tests/testparser.c");
   puts(inbuf);
   Token *tokens=tokenize(inbuf);
   showTokens(tokens);
+  parse(tokens);
   free(inbuf);
-  //  parser(tokens);
+  free(tokens);
   return 0;
 }

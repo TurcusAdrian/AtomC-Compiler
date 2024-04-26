@@ -187,10 +187,10 @@ Token *tokenize(const char *pch){
 					tk->i=atoi(text);
 				    }
 				}
-				else if (isalpha(*pch) || *pch == '"' || *pch == '\''){
+				else if ( isalpha(*pch) || *pch == '"' || *pch == '\''){
 				  pch++;
 				  int one_quote=0;
-				  for(start=pch++;isalnum(*pch) || *pch=='"' || *pch=='\'';pch++){
+				  for(start=pch++; *pch!='"' && *pch!='\'' ;pch++){
 				    if(*pch=='\''){
 				      one_quote=1;
 				    }
@@ -224,7 +224,7 @@ void showTokens(const Token *tokens) {
             printf(":%g\n", tk->d);
         } else if (strcmp(token, "CHAR") == 0) {
             printf(":%c\n", tk->c);
-        } else if (strcmp(token, "STRING") == 0) {
+        } else if ( !strcmp(token, "STRING")||!strcmp(token,"ID")) {
             printf(":%s\n", tk->text);
         } else {
             printf("\n");

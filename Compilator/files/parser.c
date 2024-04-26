@@ -4,6 +4,8 @@
 #include <stdbool.h>
 
 #include "parser.h"
+#include "lexer.h"
+
 
 Token *iTk;		// the iterator in the tokens list
 Token *consumedTk;		// the last consumed token
@@ -19,49 +21,268 @@ void tkerr(const char *fmt,...){
 	}
 
 bool consume(int code){
+  printf("consume(%s)",tokenName(code));
 	if(iTk->code==code){
 		consumedTk=iTk;
 		iTk=iTk->next;
+		printf(" => consumed\n");
 		return true;
-		}
+	}
+	printf(" => found %s\n",tokenName(iTk->code));
 	return false;
 	}
 
 // typeBase: TYPE_INT | TYPE_DOUBLE | TYPE_CHAR | STRUCT ID
 bool typeBase(){
+   printf("#typeBase\n");
+   Token *start=iTk;
 	if(consume(TYPE_INT)){
 		return true;
 		}
-	if(consume(TYPE_DOUBLE)){
+	else if(consume(TYPE_DOUBLE)){
 		return true;
 		}
-	if(consume(TYPE_CHAR)){
+	else if(consume(TYPE_CHAR)){
 		return true;
 		}
-	if(consume(STRUCT)){
+	else if(consume(STRUCT)){
 		if(consume(ID)){
 			return true;
-			}
+		}else tkerr("Missing name for the struct");
 		}
+	iTk=start;
 	return false;
 	}
 
-bool exprPrimary(){
-  if(consume(ID)){
-    if(consume(LPAR)){
-      if(expr()){
-	while(if(consume(COMMA)||expr())){}
-      }
-      if(consume(LPAR)){}
-    }
-    return true;
-    }
-  if(consume(INT) || consume(DOUBLE) || consume(CHAR) || consume(STRING) || (if(consume(LPAR)){if(expr()){if(consume(RPAR)){}}})){
-    return true;
-    }
+bool arrayDecl(){
+  printf("#arrayDecl\n");
+  Token *start=iTk;
+  if(consume(LBRACKET)){
+    if(consume(INT)){}
+    if(consume(RBRACKET)){
+      return true;
+    }else tkerr("Missing ] from array declaration");
+  }
+  iTk=start;
   return false;
 }
-    
+
+bool varDef(){
+   printf("#varDef\n");
+   Token *start=iTk;
+  if(typeBase()){
+    if(consume(ID)){
+     if(arrayDecl()){}
+     if(consume(SEMICOLON)){
+       return true;
+     } else tkerr("Missing ; from variable definition");
+    } else tkerr("Missing name from variable declaration");
+  }
+  iTk=start;
+  return false;
+}
+
+bool expr(){
+  printf("#expr %s\n",tokenName(iTk->code));
+  Token *start=iTk;
+  if(exprAssign()){
+    return true;
+  }
+  iTk=start;
+  return false;
+}
+
+bool exprAssign(){
+  printf("#exprAssign %s\n",tokenName(iTk->code));
+  Token *start=iTk;
+  if(exprUnary()){
+    if(consume(ASSIGN)){
+      if(exprAssign()){
+	return true;
+      } else tkerr("Missing expression after = sign");
+    } else tkerr("Missing = from the expression");
+  }
+  if(exprOr()){
+    return true;
+  }
+  iTk=start;
+  return false;
+}
+
+bool exprOr(){
+  printf("#exprOr %s\n",tokenName(iTk->code));
+  Token *start=iTk;
+  if(exprAnd()){
+    if(exprOrPrim()){
+      return true;
+    }
+  }
+  iTk=start;
+  return false;
+}
+
+bool exprOrPrim(){
+  if(consume(OR)){
+    if(exprAnd()){
+      if(exprOrPrim()){
+	return true;
+      }
+    }else tkerr("Missing expression after ||");
+  }
+  return true; // epsilon
+}
+
+bool exprAnd(){
+ printf("#exprAnd %s\n",tokenName(iTk->code));
+ Token *start=iTk;
+ if(exprEq()){
+   if(exprAndPrim()){
+     return true;
+   }
+ }
+ iTk=start;
+ return false;
+}
+
+bool exprAndPrim(){
+  if(consume(AND)){
+    if(exprEq()){
+      if(exprAndPrim()){
+	return true;
+      }
+    }else tkerr("Missing expression after &&");
+  }
+  return true;//epsilon
+}
+
+bool exprEq(){
+  printf("#exprEq %s\n",tokenName(iTk->code));
+  Token *start=iTk;
+  if(exprRel()){
+    if(exprEqPrim()){
+      return true;
+    }
+  }
+  iTk=start;
+  return false;
+}
+
+bool exprEqPrim(){
+  if(consume(EQUAL)||consume(NOTEQ)){
+    if(exprRel()){
+      if(exprEqPrim()){
+	return true;
+      }
+    }else tkerr("Missing expression after = or != sign");
+  }
+  return true; //epsilon
+}
+
+bool exprRel(){
+  printf("#exprRel %s\n",tokenName(iTk->code));
+  Token *start=iTk;
+  if(exprAdd()){
+    if(exprRelPrim()){
+      return true;
+    }
+  }
+  iTk=start;
+  return false;
+}
+
+bool exprRelPrim(){
+  if(consume(LESS)||consume(LESSEQ)||consume(GREATER)||consume(GREATEREQ)){
+    if(exprAdd()){
+      if(exprRelPrim()){
+	return true;
+      }
+    }else tkerr("Missing expression after comparison operator");
+  }
+  return true;
+}
+
+bool exprAdd(){
+  printf("#exprAdd %s\n",tokenName(iTk->code));
+  Token *start=iTk;
+  if(exprMul()){
+    if(exprAddPrim()){
+      return true;
+    }
+  }
+  iTk=start;
+  return false;
+}
+
+bool exprAddPrim(){
+  if(consume(ADD)||consume(SUB)){
+    if(exprMul()){
+      if(exprAddPrim()){
+	return true;
+      }
+    }else tkerr("Missing expression after + or - operator");
+  }
+  return true; //epsilon
+}
+
+bool exprCast(){
+  printf("#exprCast %s\n",tokenName(iTk->code));
+  Token *start=iTk;
+  if(consume(LPAR)){
+    if(typeBase()){
+      if(arrayDecl()){}
+      if(consume(RPAR)){
+	if(exprCast()){
+	  return true;
+	}
+      }else tkerr("Missing ) from expression");
+    }
+  }
+  if(exprUnary()){
+    return true;
+  }
+  iTk=start;
+  return false;
+}
+
+
+bool exprMulPrim(){
+  if(consume(MUL)||consume(DIV)){
+    if(exprCast()){
+      if(exprMulPrim()){
+	return true;
+      }
+    }else tkerr("Missing expression after * or / operator");
+  }
+  return true;
+}
+
+bool exprMul(){
+  printf("#exprMul %s\n",tokenName(iTk->code));
+  Token *start=iTk;
+  if(exprCast()){
+    if(exprMulPrim()){
+      return true;
+    }
+  }
+  iTk=start;
+  return false;
+}
+
+bool exprUnary(){
+  printf("#exprUnary %s\n",tokenName(iTk->code));
+  Token *start=iTk;
+  if(consume(SUB)|| consume(NOT)){
+    if(exprUnary()){
+      return true;
+    }
+  }else tkerr("Missing operator - or ! in expression");
+  if(exprPostfix()){
+    return true;
+  }
+  iTk=start;
+  return false;
+}
+
 bool exprPostfixPrim(){
   if(consume(LBRACKET)){
     if(expr()){
@@ -69,7 +290,7 @@ bool exprPostfixPrim(){
 	if(exprPostfixPrim()){
 	  return true;
 	}
-      }
+      }else tkerr("Missing ] from expression");
     }
   }
   if(consume(DOT)){
@@ -77,64 +298,57 @@ bool exprPostfixPrim(){
       if(exprPostfixPrim()){
 	return true;
       }
-    }
+    }else tkerr("Missing name after . ");
   }
   return true; //epsilon
 }
 
 bool exprPostfix(){
+  printf("#exprPostfix %s\n",tokenName(iTk->code));
+  Token *start=iTk;
   if(exprPrimary()){
     if(exprPostfixPrim()){
       return true;
     }
   }
+  iTk=start;
   return false;
 }
 
-bool exprUnary(){
-  if(consume(SUB)|| consume(NOT)){
-    if(exprUnary()){
-      return true;
+bool exprPrimary(){
+  printf("#exprPrimary %s\n",tokenName(iTk->code));
+  Token *start=iTk;
+  if(consume(ID)){
+    if(consume(LPAR)){
+      if(expr()){
+	while(consume(COMMA) || expr()){}
+      }
+      if(consume(RPAR)){
+	return true;
+      }
     }
-  }
-  if(exprPostfix()){
     return true;
   }
-  return false;
-}
 
-bool exprAssign(){
-  if(exprUnary()){
-    if(consume(ASSIGN)){
-      if(exprAssign()){
+  else if(consume(INT)){}
+  else if(consume(DOUBLE)){}
+  else if(consume(CHAR)){}
+  else if(consume(STRING)){}
+  else if(consume(LPAR)){
+    if(expr()){
+      if(consume(RPAR)){
 	return true;
       }
     }
   }
-  if(exprOr()){
-    return true;
-  }
+  iTk=start;
   return false;
 }
 
-bool expr(){
-  if(exprAssign()){
-    return true;
-  }
-  return false;
-}
-
-bool stmCompound(){
-  if(consume(LACC)){
-    while(varDef()||stm()){}
-    if(consume(RACC)){
-      return true;
-    }
-  }
-  return false;
-}
-
+    
 bool stm(){
+  printf("#stm\n");
+  Token *start=iTk;
   if(stmCompound()){
       return true;
     }
@@ -151,6 +365,7 @@ bool stm(){
 	  }
 	}
       }
+      iTk=start;
     }
     if(consume(WHILE)){
       if(consume(LPAR)){
@@ -162,38 +377,61 @@ bool stm(){
 	  }
 	}
       }
+      iTk=start;
     }
     if(consume(RETURN)){
       if(expr()){}
       if(consume(SEMICOLON)){
 	return true;
       }
+      iTk=start;
     }
     if(expr()){}
     if(consume(SEMICOLON)){
       return true;
     }
+    iTk=start;
     return false;
 }
+
+bool stmCompound(){
+  printf("#stmCompound\n");
+  Token *start=iTk;
+  if(consume(LACC)){
+    while(varDef()||stm()){}
+    if(consume(RACC)){
+      return true;
+    }else tkerr("Missing } for statement");
+  }
+  iTk=start;
+  return false;
+}
+
+
 	
 bool fnParam(){
+  printf("#fnParam\n");
+  Token *start=iTk;
   if(typeBase()){
     if(consume(ID)){
       if(arrayDecl()){}
-      return true;
-      }
+         return true;
+    }else tkerr("Missing function parameter name");
     }
+  iTk=start;
   return false;
 }
 
 bool fnDef(){
+  printf("#fnDef\n");
+  Token *start=iTk;
   if(typeBase()||consume(VOID)){
     if(consume(ID)){
       return true;
-    }
-  }
+    } else tkerr("Missing function arguments");
+  
   if(consume(LPAR)){
-    if(fnparam()){
+    if(fnParam()){
       while(consume(COMMA) || fnParam()){}
     }
     if(consume(RPAR)){
@@ -203,32 +441,14 @@ bool fnDef(){
   if(stmCompound()){
     return true;
   }
-  return false;
-}
- 
-bool arrayDecl(){
-  if(consume(LBRACKET)){
-    if(consume(INT)){}
-    if(consume(RBRACKET)){
-      return true;
-    }
   }
-  return false;
-}
-
-bool varDef(){
-  if(typeBase()){
-    if(consume(ID)){
-     if(arrayDecl()){}
-     if(consume(SEMICOLON)){
-       return true;
-     }
-    }
-  }
+  iTk=start;
   return false;
 }
  
 bool structDef(){
+  printf("#structDef\n");
+  Token *start=iTk;
   if(consume(STRUCT)){
     if(consume(ID)){
 	if(consume(LACC)){
@@ -236,17 +456,19 @@ bool structDef(){
 	  if(consume(RACC)){
 	      if(consume(SEMICOLON)){
 		return true;
-	      }
-	  }
+	      } else tkerr("Missing ; from struct definition");
+	  } else tkerr("Missing } from struct initialisation");
 	}
-      }
+    } else tkerr("Missing struct name");
   }
+  iTk=start;
   return false;
 }
 
 
 // unit: ( structDef | fnDef | varDef )* END
 bool unit(){
+  printf("#unit\n");
 	for(;;){
 		if(structDef()){}
 		else if(fnDef()){}
@@ -255,134 +477,11 @@ bool unit(){
 		}
 	if(consume(END)){
 		return true;
-		}
-	return false;
-	}
+	} else tkerr("End of file not reached!");
+  return false;
+}
 
 void parse(Token *tokens){
 	iTk=tokens;
 	if(!unit())tkerr("syntax error");
-	}
-
-
-bool exprMulPrim(){
-  if(consume(MUL)||consume(DIV)){
-    if(exprCast()){
-      if(exprMulPrim()){
-	return true;
-      }
-    }
-  }
-  return true;
 }
-
-bool exprMul(){
-  if(exprCast()){
-    if(exprMulPrim()){
-      return true;
-    }
-  }
-  return false;
-}
-
-bool exprAddPrim(){
-  if(consume(ADD)||consume(SUB)){
-    if(exprMul()){
-      if(exprAddPrim){
-	return true;
-      }
-    }
-  }
-  return true; //epsilon
-}
-
-bool exprAdd(){
-  if(exprMul()){
-    if(exprAddPrim()){
-      return true;
-    }
-  }
-  return false;
-}
-bool exprRelPrim(){
-  if(consume(LESS)||consume(LESSEQ)||consume(GREATER)||consume(GREATEREQ)){
-    if(exprAdd()){
-      if(exprRelPrim()){
-	return true;
-      }
-    }
-  }
-  return true;
-}
-
-bool exprRel(){
-  if(exprAdd()){
-    if(exprRelPrim()){
-      return true;
-    }
-  }
-  return false;
-}
-
-bool exprEqPrim(){
-  if(consume(EQUAL)||consume(NOTEQ)){
-    if(exprRel()){
-      if(exprEqPrim()){
-	return true;
-      }
-    }
-  }
-  return true; //epsilon
-}
-
-bool exprEq(){
-  if(exprRel()){
-    if(exprEqPrim()){
-      return true;
-    }
-  }
-  return false;
-}
-
-bool exprAndPrim(){
-  if(consume(AND)){
-    if(exprEq()){
-      if(exprAndPrim()){
-	return true;
-      }
-    }
-  }
-  return true;//epsilon
-}
-
-bool exprAnd(){
- printf("#exprAnd %s\n",tkName(iTk->code));
- if(exprEq()){
-   if(exprAndPrim()){
-     return true;
-   }
- }
-}
-
-
-bool exprOrPrim(){
-  if(consume(OR)){
-    if(exprAnd()){
-      if(exprOrPrim()){
-	return true;
-      }
-    }
-  }
-  return true; // epsilon
-}
-
-bool exprOr(){
-  printf("#exprOr %s\n",tkName(iTk->code));
-  if(exprAnd()){
-    if(exprOrPrim()){
-      return true;
-    }
-  }
-  return false;
-}
-

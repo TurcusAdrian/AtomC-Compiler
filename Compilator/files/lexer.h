@@ -24,3 +24,4 @@ typedef struct Token{
 
 Token *tokenize(const char *pch);
 void showTokens(const Token *tokens);
+const char* tokenName(int position);
