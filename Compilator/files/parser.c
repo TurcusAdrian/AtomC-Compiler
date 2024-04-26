@@ -98,16 +98,19 @@ bool exprAssign(){
   if(exprUnary()){
     if(consume(ASSIGN)){
       if(exprAssign()){
-	return true;
+        return true;
       } else tkerr("Missing expression after = sign");
-    } else tkerr("Missing = from the expression");
+    }
+    iTk=start;
   }
+  
   if(exprOr()){
     return true;
   }
   iTk=start;
   return false;
 }
+
 
 bool exprOr(){
   printf("#exprOr %s\n",tokenName(iTk->code));
@@ -274,8 +277,8 @@ bool exprUnary(){
   if(consume(SUB)|| consume(NOT)){
     if(exprUnary()){
       return true;
-    }
-  }else tkerr("Missing operator - or ! in expression");
+    }else tkerr("Missing operator - or ! in expression");
+  }
   if(exprPostfix()){
     return true;
   }
@@ -284,6 +287,7 @@ bool exprUnary(){
 }
 
 bool exprPostfixPrim(){
+  Token *start=iTk;
   if(consume(LBRACKET)){
     if(expr()){
       if(consume(RBRACKET)){
@@ -292,6 +296,7 @@ bool exprPostfixPrim(){
 	}
       }else tkerr("Missing ] from expression");
     }
+    iTk=start;
   }
   if(consume(DOT)){
     if(consume(ID)){
@@ -299,6 +304,7 @@ bool exprPostfixPrim(){
 	return true;
       }
     }else tkerr("Missing name after . ");
+    iTk=start;
   }
   return true; //epsilon
 }
@@ -316,97 +322,118 @@ bool exprPostfix(){
 }
 
 bool exprPrimary(){
-  printf("#exprPrimary %s\n",tokenName(iTk->code));
-  Token *start=iTk;
+  printf("#exprPrimary\n");
+  Token* start = iTk;
   if(consume(ID)){
-    if(consume(LPAR)){
-      if(expr()){
-	while(consume(COMMA) || expr()){}
-      }
-      if(consume(RPAR)){
-	return true;
-      }
-    }
+   if(consume(LPAR)){
+    if(expr()){
+     while(consume(COMMA)){
+      if(expr()){}
+      else tkerr("Missing expression after .");
+     }
+    }else tkerr("Missing expression after (");
+     if(consume(RPAR)){
+      return true;
+     }else tkerr("Missing )");
+   }
     return true;
   }
-
-  else if(consume(INT)){}
-  else if(consume(DOUBLE)){}
-  else if(consume(CHAR)){}
-  else if(consume(STRING)){}
+  else if(consume(DOUBLE)){
+    return true;
+  }
+  else if(consume(CHAR)){
+    return true;
+  }
+  else if(consume(STRING)){
+    return true;
+  }
+  else if(consume(INT)){
+    return true;
+  }
   else if(consume(LPAR)){
     if(expr()){
-      if(consume(RPAR)){
-	return true;
-      }
-    }
+     if(consume(RPAR)){
+      return true;
+     }else tkerr("Missing )");
+    }else tkerr("Missing expression after (");
   }
-  iTk=start;
-  return false;
+ iTk = start;
+ return false;
 }
 
     
 bool stm(){
-  printf("#stm\n");
-  Token *start=iTk;
-  if(stmCompound()){
-      return true;
-    }
-    if(consume(IF)){
-      if(consume(LPAR)){
-	if(expr()){
-	  if(consume(RPAR)){
-	    if(stm()){
-	      if(consume(ELSE)){
-		if(stm()){}
-	      }
-	      return true;
-	    }
-	  }
+	printf("#stm\n");
+	Token* start= iTk;
+	if(stmCompound()){
+		return true;
 	}
-      }
-      iTk=start;
-    }
-    if(consume(WHILE)){
-      if(consume(LPAR)){
-	if(expr()){
-	  if(consume(RPAR)){
-	    if(stm()){
-	      return true;
-	    }
-	  }
+	if(consume(IF)){
+		if(consume(LPAR)){
+			if(expr()){
+				if(consume(RPAR)){
+					if(stm()){
+						if(consume(ELSE)){
+							if(stm()) {
+                                return true;
+                            } else {
+                                tkerr("Else statement missing");
+                            }
+						}
+						return true;
+					}else tkerr("If statement missing");
+				}else tkerr("Missing )");
+			}else tkerr("Missing if expression");
+		}else tkerr("Missing ( after if");
+		iTk=start;
 	}
-      }
-      iTk=start;
+	else if(consume(WHILE)){
+		if(consume(LPAR)){
+			if(expr()){
+				if(consume(RPAR)){
+					if(stm()){
+						return true;
+					}else tkerr("Missing while body");
+				}else tkerr("Missing ) for while");
+			}else tkerr("Missing while condition");
+		}else tkerr("Missing ) after while keyword");
+		iTk=start;
+	}
+	else if(consume(RETURN)){
+		if(expr()){}
+		if(consume(SEMICOLON)){
+			return true;
+		}else tkerr("Missing ; at return statement");
+		iTk=start;
+	}
+	else if(expr()) {
+        if(consume(SEMICOLON)){
+            return true;
+        } else {
+            tkerr("Missing ; after expression");
+        }
     }
-    if(consume(RETURN)){
-      if(expr()){}
-      if(consume(SEMICOLON)){
-	return true;
-      }
-      iTk=start;
-    }
-    if(expr()){}
-    if(consume(SEMICOLON)){
-      return true;
-    }
-    iTk=start;
-    return false;
+	iTk = start;
+	return false;
 }
+
 
 bool stmCompound(){
-  printf("#stmCompound\n");
-  Token *start=iTk;
-  if(consume(LACC)){
-    while(varDef()||stm()){}
-    if(consume(RACC)){
-      return true;
-    }else tkerr("Missing } for statement");
-  }
-  iTk=start;
-  return false;
+	printf("StmCompound\n");
+	Token* start = iTk;
+	if(consume(LACC)){
+			for(;;){
+			if(varDef()){}
+			else if(stm()){}
+			else break;
+		}
+		if(consume(RACC)){
+			return true;
+		}else tkerr("Missing } for a statement");
+	}
+	iTk = start;
+	return false;
 }
-
 
 	
 bool fnParam(){
@@ -415,32 +442,32 @@ bool fnParam(){
   if(typeBase()){
     if(consume(ID)){
       if(arrayDecl()){}
-         return true;
+      return true;
     }else tkerr("Missing function parameter name");
-    }
+  }
   iTk=start;
   return false;
 }
 
 bool fnDef(){
   printf("#fnDef\n");
-  Token *start=iTk;
-  if(typeBase()||consume(VOID)){
-    if(consume(ID)){
-      return true;
-    } else tkerr("Missing function arguments");
-  
-  if(consume(LPAR)){
-    if(fnParam()){
-      while(consume(COMMA) || fnParam()){}
+  Token *start= iTk;
+  if(typeBase() || consume(VOID)){
+   if(consume(ID)){
+    if(consume(LPAR)){
+     if(fnParam()){
+       while(consume(COMMA)){
+        if(fnParam()){}
+        else tkerr("Expected type specifier in function after ,");
+       }
+      }
+     if(consume(RPAR)){
+      if(stmCompound()){
+       return true;
+      }else tkerr("Missing body function");
+     }else tkerr("Missing ) in function");
     }
-    if(consume(RPAR)){
-      return true;
-    }
-  }
-  if(stmCompound()){
-    return true;
-  }
+   }
   }
   iTk=start;
   return false;
