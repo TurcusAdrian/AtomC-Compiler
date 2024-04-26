@@ -7,7 +7,7 @@ struct Pt points[10];
 double max(double a, double b){
 	if(a>b)return a;
 		else return b;
-	}
+}
 
 
 int len(char s[]){

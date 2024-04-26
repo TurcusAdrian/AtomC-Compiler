@@ -4,7 +4,9 @@
 
 // the domain analysis
 
-struct Symbol;typedef struct Symbol Symbol;
+struct Symbol;
+
+typedef struct Symbol Symbol;
 
 typedef enum{		// base type
 	TB_INT,TB_DOUBLE,TB_CHAR,TB_VOID,TB_STRUCT

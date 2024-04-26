@@ -21,7 +21,7 @@ bool exprAssign();
 
 bool expr();
 
-bool stmCompound();
+bool stmCompound(bool newDomain);
 
 bool stm();
 
