@@ -9,7 +9,7 @@
 Token *tokens;	// single linked list of tokens
 Token *lastTk;		// the last token in list
 
-int line=1;		// the current line in the input file
+int line=0;		// the current line in the input file
 
 // adds a token to the end of the tokens list and returns it
 // sets its code and line
@@ -167,10 +167,12 @@ Token *tokenize(const char *pch){
 				  int with_e = 0;
 				   for (start = pch++; isalnum(*pch) || *pch == '_' || *pch == '.' || *pch == 'e' || *pch=='E' || *pch == '-' || *pch == '+'; pch++){
 				      if (*pch == '.'){
-						with_dot=1;
+					if( with_dot || with_e){err("Invalid double number format!");}
+					with_dot=1;
 				      }
 				      if (*pch == 'e' || *pch == 'E'){
-						with_e=1;
+					if (with_e){err("Invalid double number format!");}
+					with_e=1;
 				      }
 				    }
 				    char *text=extract(start, pch);
