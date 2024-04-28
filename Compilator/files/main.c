@@ -6,10 +6,11 @@
 #include "utils.h"
 #include "parser.h"
 #include "ad.h"
+#include "at.h"
 
 int main()
 {
-    char *inbuf = loadFile("tests/testad.c");
+    char *inbuf = loadFile("tests/testat.c");
     // puts(inbuf);
     Token *tokens = tokenize(inbuf);
     free(inbuf);
